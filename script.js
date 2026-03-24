@@ -1,10 +1,9 @@
-// Script.js FINAL - versão limpa sem duplicatas
-// Auto-load CSV + funcionalidade original completa
+// Script.js - Gráficos atualizam com filtros
+// Baseado no seu código que já funcionava
 
 (function() {
   'use strict';
 
-  // Elementos DOM
   const els = {
     fileInput: document.getElementById('csvFile'),
     fileNameSpan: document.getElementById('fileName'),
@@ -23,7 +22,7 @@
   let rawData = [];
   let charts = {};
 
-  // Event listeners seguros
+  // Event listeners
   if (els.fileInput) els.fileInput.addEventListener('change', handleFile);
   if (els.exportPdfBtn) els.exportPdfBtn.addEventListener('click', () => window.print());
   if (els.clearFiltersBtn) els.clearFiltersBtn.addEventListener('click', clearFilters);
@@ -31,7 +30,7 @@
     if (els[key]) els[key].addEventListener('change', renderAll);
   });
 
-  // Auto-load CSV
+  // Auto-load
   window.addEventListener('load', loadCsv);
 
   function loadCsv() {
@@ -45,7 +44,7 @@
         renderAll();
       })
       .catch(() => {
-        if (els.fileNameSpan) els.fileNameSpan.textContent = 'Carregue CSV manualmente';
+        if (els.fileNameSpan) els.fileNameSpan.textContent = 'Carregue manualmente';
       });
   }
 
@@ -106,10 +105,10 @@
   }
 
   function clearFilters() {
-    Object.values(els).forEach(el => {
-      if (el && el.tagName === 'INPUT' && el.type === 'date') el.value = '';
-      if (el && el.tagName === 'SELECT') el.value = '';
-    });
+    if (els.startDateEl) els.startDateEl.value = '';
+    if (els.endDateEl) els.endDateEl.value = '';
+    if (els.productFilterEl) els.productFilterEl.value = '';
+    if (els.regionFilterEl) els.regionFilterEl.value = '';
     renderAll();
   }
 
@@ -168,38 +167,65 @@
   }
 
   function renderCharts(data) {
+    // Destroi gráficos antigos
+    Object.values(charts).forEach(c => c?.destroy());
+    charts = {};
+
     if (!data.length) return;
 
     const canvases = {
-      revenueByDateChart: document.getElementById('revenueByDateChart'),
-      revenueByProductChart: document.getElementById('revenueByProductChart'),
-      revenueByRegionChart: document.getElementById('revenueByRegionChart')
+      date: document.getElementById('revenueByDateChart'),
+      product: document.getElementById('revenueByProductChart'),
+      region: document.getElementById('revenueByRegionChart')
     };
 
     const byDate = aggregate(data, 'date');
     const byProduct = aggregate(data, 'product');
     const byRegion = aggregate(data, 'region');
 
-    if (canvases.revenueByDateChart) {
-      new Chart(canvases.revenueByDateChart, {
+    if (canvases.date) {
+      charts.date = new Chart(canvases.date, {
         type: 'line',
-        data: { labels: Object.keys(byDate), datasets: [{ label: 'Receita', data: Object.values(byDate), borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.3)', tension: 0.2 }] },
+        data: {
+          labels: Object.keys(byDate).sort(),
+          datasets: [{
+            label: 'Receita por data',
+            data: Object.values(byDate).sort((a, b) => Object.keys(byDate).indexOf(a) - Object.keys(byDate).indexOf(b)),
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56, 189, 248, 0.3)',
+            tension: 0.2
+          }]
+        },
         options: { responsive: true }
       });
     }
 
-    if (canvases.revenueByProductChart) {
-      new Chart(canvases.revenueByProductChart, {
+    if (canvases.product) {
+      charts.product = new Chart(canvases.product, {
         type: 'bar',
-        data: { labels: Object.keys(byProduct), datasets: [{ label: 'Receita', data: Object.values(byProduct), backgroundColor: 'rgba(56, 189, 248, 0.6)' }] },
+        data: {
+          labels: Object.keys(byProduct),
+          datasets: [{
+            label: 'Receita por produto',
+            data: Object.values(byProduct),
+            backgroundColor: 'rgba(56, 189, 248, 0.6)'
+          }]
+        },
         options: { responsive: true }
       });
     }
 
-    if (canvases.revenueByRegionChart) {
-      new Chart(canvases.revenueByRegionChart, {
+    if (canvases.region) {
+      charts.region = new Chart(canvases.region, {
         type: 'bar',
-        data: { labels: Object.keys(byRegion), datasets: [{ label: 'Receita', data: Object.values(byRegion), backgroundColor: 'rgba(56, 189, 248, 0.6)' }] },
+        data: {
+          labels: Object.keys(byRegion),
+          datasets: [{
+            label: 'Receita por região',
+            data: Object.values(byRegion),
+            backgroundColor: 'rgba(56, 189, 248, 0.6)'
+          }]
+        },
         options: { responsive: true }
       });
     }
