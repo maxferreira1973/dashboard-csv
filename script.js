@@ -1,50 +1,58 @@
+const fileInput = document.getElementById('csvFile');
+const fileNameSpan = document.getElementById('fileName');
+
+const totalRevenueEl = document.getElementById('totalRevenue');
+const totalProfitEl = document.getElementById('totalProfit');
+const avgMarginEl = document.getElementById('avgMargin');
+
+const startDateEl = document.getElementById('startDate');
+const endDateEl = document.getElementById('endDate');
+const productFilterEl = document.getElementById('productFilter');
+const regionFilterEl = document.getElementById('regionFilter');
+const clearFiltersBtn = document.getElementById('clearFilters');
+
+const tableBody = document.querySelector('#salesTable tbody');
+
 let rawData = [];
-let filteredData = [];
 let charts = {};
 
-const fileInput = document.getElementById('fileInput');
-const startDateInput = document.getElementById('startDate');
-const endDateInput = document.getElementById('endDate');
-const filterProduct = document.getElementById('filterProduct');
-const filterRegion = document.getElementById('filterRegion');
-const applyFiltersBtn = document.getElementById('applyFilters');
+fileInput.addEventListener('change', handleFile);
+clearFiltersBtn.addEventListener('click', () => {
+  startDateEl.value = '';
+  endDateEl.value = '';
+  productFilterEl.value = '';
+  regionFilterEl.value = '';
+  renderAll();
+});
 
-const exportPdfBtn = document.getElementById('exportPdfBtn');
-if (exportPdfBtn) {
-  exportPdfBtn.addEventListener('click', () => {
-    window.print(); // abre o diálogo de impressão do Chrome
-  });
-}
+[startDateEl, endDateEl, productFilterEl, regionFilterEl].forEach(el =>
+  el.addEventListener('change', renderAll)
+);
 
-
-fileInput.addEventListener('change', handleFileUpload);
-applyFiltersBtn.addEventListener('click', applyFilters);
-
-function handleFileUpload(event) {
+function handleFile(event) {
   const file = event.target.files[0];
   if (!file) return;
 
+  fileNameSpan.textContent = file.name;
+
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = e => {
     const text = e.target.result;
     rawData = parseCSV(text);
-    filteredData = [...rawData];
     populateFilters(rawData);
-    updateAll();
+    renderAll();
   };
-
   reader.readAsText(file, 'utf-8');
 }
 
 function parseCSV(text) {
   const lines = text.trim().split(/\r?\n/);
-  // seu CSV usa vírgula como separador
   const header = lines[0].split(',').map(h => h.trim().toLowerCase());
 
   const dateIdx = header.indexOf('date');
   const productIdx = header.indexOf('product');
   const regionIdx = header.indexOf('region');
-  const unitsIdx = header.indexOf('units_sold'); // nome exato do CSV
+  const unitsIdx = header.indexOf('units_sold'); // nome correto do CSV
   const revenueIdx = header.indexOf('revenue');
   const costIdx = header.indexOf('cost');
 
@@ -64,224 +72,118 @@ function parseCSV(text) {
   });
 }
 
-
 function populateFilters(data) {
   const products = Array.from(new Set(data.map(d => d.product))).sort();
   const regions = Array.from(new Set(data.map(d => d.region))).sort();
 
-  filterProduct.innerHTML = '<option value="">Todos</option>' +
+  productFilterEl.innerHTML = '<option value="">Todos</option>' +
     products.map(p => `<option value="${p}">${p}</option>`).join('');
 
-  filterRegion.innerHTML = '<option value="">Todas</option>' +
+  regionFilterEl.innerHTML = '<option value="">Todas</option>' +
     regions.map(r => `<option value="${r}">${r}</option>`).join('');
-
-  // datas mín e máx
-  const dates = data.map(d => d.date).sort();
-  if (dates.length > 0) {
-    startDateInput.value = dates[0];
-    endDateInput.value = dates[dates.length - 1];
-  }
 }
 
-function applyFilters() {
-  if (!rawData || rawData.length === 0) return;
+function getFilteredData() {
+  if (!rawData.length) return [];
 
-  const start = startDateInput.value ? new Date(startDateInput.value) : null;
-  const end = endDateInput.value ? new Date(endDateInput.value) : null;
-  const prod = filterProduct.value;
-  const reg = filterRegion.value;
+  const start = startDateEl.value ? new Date(startDateEl.value) : null;
+  const end = endDateEl.value ? new Date(endDateEl.value) : null;
+  const product = productFilterEl.value;
+  const region = regionFilterEl.value;
 
-  filteredData = rawData.filter(d => {
+  return rawData.filter(d => {
     const dDate = new Date(d.date);
     if (start && dDate < start) return false;
     if (end && dDate > end) return false;
-    if (prod && d.product !== prod) return false;
-    if (reg && d.region !== reg) return false;
+    if (product && d.product !== product) return false;
+    if (region && d.region !== region) return false;
     return true;
   });
-
-  updateAll();
 }
 
-function updateAll() {
-  updateKpis();
-  updateCharts();
-  updateTable();
+function renderAll() {
+  const data = getFilteredData();
+  renderKPIs(data);
+  renderTable(data);
+  renderCharts(data);
 }
 
-function updateKpis() {
-  const totalRevenue = filteredData.reduce((sum, d) => sum + d.revenue, 0);
-  const totalProfit = filteredData.reduce((sum, d) => sum + d.profit, 0);
-  const avgMargin = filteredData.length > 0
-    ? filteredData.reduce((sum, d) => sum + d.margin, 0) / filteredData.length
+function renderKPIs(data) {
+  const totalRevenue = data.reduce((acc, d) => acc + d.revenue, 0);
+  const totalProfit = data.reduce((acc, d) => acc + d.profit, 0);
+  const avgMargin = data.length
+    ? data.reduce((acc, d) => acc + d.margin, 0) / data.length
     : 0;
 
-  document.getElementById('totalRevenue').textContent = formatCurrency(totalRevenue);
-  document.getElementById('totalProfit').textContent = formatCurrency(totalProfit);
-  document.getElementById('avgMargin').textContent = avgMargin.toFixed(2) + '%';
-}
-
-function updateCharts() {
-  updateRevenueByMonthChart();
-  updateRevenueByProductChart();
-  updateRevenueByRegionChart();
-}
-
-function groupByMonth(data) {
-  const map = new Map();
-  data.forEach(d => {
-    const month = d.date.slice(0, 7); // YYYY-MM
-    map.set(month, (map.get(month) || 0) + d.revenue);
-  });
-  const entries = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  return {
-    labels: entries.map(e => e[0]),
-    values: entries.map(e => e[1])
-  };
-}
-
-function groupByKey(data, key) {
-  const map = new Map();
-  data.forEach(d => {
-    const k = d[key];
-    map.set(k, (map.get(k) || 0) + d.revenue);
-  });
-  const entries = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  return {
-    labels: entries.map(e => e[0]),
-    values: entries.map(e => e[1])
-  };
-}
-
-function updateRevenueByMonthChart() {
-  const ctx = document.getElementById('revenueByMonth').getContext('2d');
-  const grouped = groupByMonth(filteredData);
-
-  if (charts.revenueByMonth) {
-    charts.revenueByMonth.destroy();
-  }
-
-  charts.revenueByMonth = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: grouped.labels,
-      datasets: [{
-        label: 'Receita',
-        data: grouped.values,
-        borderColor: '#1976d2',
-        backgroundColor: 'rgba(25, 118, 210, 0.15)',
-        fill: true,
-        tension: 0.2
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: (value) => formatCurrency(value)
-          }
-        }
-      }
-    }
-  });
-}
-
-function updateRevenueByProductChart() {
-  const ctx = document.getElementById('revenueByProduct').getContext('2d');
-  const grouped = groupByKey(filteredData, 'product');
-
-  if (charts.revenueByProduct) {
-    charts.revenueByProduct.destroy();
-  }
-
-  charts.revenueByProduct = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: grouped.labels,
-      datasets: [{
-        label: 'Receita',
-        data: grouped.values,
-        backgroundColor: 'rgba(46, 125, 50, 0.7)'
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: (value) => formatCurrency(value)
-          }
-        }
-      }
-    }
-  });
-}
-
-function updateRevenueByRegionChart() {
-  const ctx = document.getElementById('revenueByRegion').getContext('2d');
-  const grouped = groupByKey(filteredData, 'region');
-
-  if (charts.revenueByRegion) {
-    charts.revenueByRegion.destroy();
-  }
-
-  charts.revenueByRegion = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: grouped.labels,
-      datasets: [{
-        label: 'Receita',
-        data: grouped.values,
-        backgroundColor: 'rgba(255, 143, 0, 0.8)'
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: (value) => formatCurrency(value)
-          }
-        }
-      }
-    }
-  });
-}
-
-function updateTable() {
-  const tbody = document.querySelector('#salesTable tbody');
-  tbody.innerHTML = '';
-
-  filteredData.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${row.date}</td>
-      <td>${row.product}</td>
-      <td>${row.region}</td>
-      <td>${row.units}</td>
-      <td>${formatCurrency(row.revenue)}</td>
-      <td>${formatCurrency(row.cost)}</td>
-      <td>${formatCurrency(row.profit)}</td>
-      <td>${row.margin.toFixed(2)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function formatCurrency(value) {
-  return value.toLocaleString('pt-BR', {
+  totalRevenueEl.textContent = totalRevenue.toLocaleString('pt-BR', {
     style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 2
+    currency: 'BRL'
   });
+  totalProfitEl.textContent = totalProfit.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  });
+  avgMarginEl.textContent = (avgMargin * 100).toFixed(1) + ' %';
 }
+
+function renderTable(data) {
+  tableBody.innerHTML = data
+    .map(d => `
+      <tr>
+        <td>${d.date}</td>
+        <td>${d.product}</td>
+        <td>${d.region}</td>
+        <td>${d.units.toLocaleString('pt-BR')}</td>
+        <td>${d.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${d.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${d.profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${(d.margin * 100).toFixed(1)} %</td>
+      </tr>
+    `)
+    .join('');
+}
+
+function renderCharts(data) {
+  if (!data.length) {
+    Object.values(charts).forEach(c => c && c.destroy());
+    charts = {};
+    return;
+  }
+
+  const byDate = aggregate(data, 'date');
+  const byProduct = aggregate(data, 'product');
+  const byRegion = aggregate(data, 'region');
+
+  charts.revenueByDate = createOrUpdateChart(
+    charts.revenueByDate,
+    document.getElementById('revenueByDateChart'),
+    'line',
+    Object.keys(byDate),
+    Object.values(byDate),
+    'Receita'
+  );
+
+  charts.revenueByProduct = createOrUpdateChart(
+    charts.revenueByProduct,
+    document.getElementById('revenueByProductChart'),
+    'bar',
+    Object.keys(byProduct),
+    Object.values(byProduct),
+    'Receita'
+  );
+
+  charts.revenueByRegion = createOrUpdateChart(
+    charts.revenueByRegion,
+    document.getElementById('revenueByRegionChart'),
+    'bar',
+    Object.keys(byRegion),
+    Object.values(byRegion),
+    'Receita'
+  );
+}
+
+function aggregate(data, key) {
+  return data.reduce((acc, d) => {
+    const k = d[key];
+    acc[k] = (acc[k] || 0) + d.revenue;
+    return acc
