@@ -8,6 +8,7 @@ body {
   padding: 0;
   background: #0b1120;
   color: #e5e7eb;
+  line-height: 1.5;
 }
 
 header {
@@ -19,252 +20,173 @@ header {
 header h1 {
   margin: 0;
   font-size: 1.6rem;
+  font-weight: 600;
 }
 
-header p {
-  margin: 4px 0 0;
-  color: #9ca3af;
-  font-size: 0.9rem;
-}
-
-section {
+/* Upload de arquivo */
+.file-upload {
   padding: 16px 24px;
+  background: #020617;
+  border-bottom: 1px solid #1f2937;
 }
 
-.file-section label {
+.file-upload label {
   font-weight: 600;
   margin-right: 8px;
+  color: #9ca3af;
 }
 
-#csvFile {
-  margin-right: 8px;
+#csvFile, #loadCsvBtn {
+  padding: 8px 12px;
+  background: #020617;
+  color: #e5e7eb;
+  border: 1px solid #1f2937;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 #fileName {
   color: #9ca3af;
   font-size: 0.9rem;
+  margin-left: 8px;
 }
 
-.kpi-section {
+/* Controles principais */
+.controls-wrapper {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 16px;
-}
-
-.kpi-card {
+  padding: 16px 24px;
   background: #020617;
-  border: 1px solid #1f2937;
-  padding: 12px 16px;
-  border-radius: 8px;
-  min-width: 180px;
+  border-bottom: 1px solid #1f2937;
 }
 
-.kpi-card h2 {
-  margin: 0 0 8px;
-  font-size: 0.95rem;
-  color: #9ca3af;
-}
-
-.kpi-card p {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.filters-section h2,
-.charts-section h2,
-.table-section h2 {
-  margin-top: 0;
+.controls {
+  display: flex;
+  gap: 8px;
 }
 
 .filters {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  align-items: flex-end;
+  align-items: end;
 }
 
-.filters label {
-  display: block;
-  font-size: 0.8rem;
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+}
+
+.filter-group label {
+  font-size: 0.85rem;
+  font-weight: 500;
   margin-bottom: 4px;
+  color: #d1d5db;
 }
 
-.filters input,
-.filters select {
+/* Date pickers e selects estilizados */
+input[type="date"], select, .btn {
   background: #020617;
   color: #e5e7eb;
-  border: 1px solid #1f2937;
-  border-radius: 4px;
-  padding: 6px 8px;
-}
-
-#clearFilters {
+  border: 1px solid #374151;
+  border-radius: 6px;
   padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid #4b5563;
-  background: #111827;
-  color: #e5e7eb;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+input[type="date"]:focus, select:focus, .btn:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
+  opacity: 0.7;
 }
 
-#clearFilters:hover {
+input[type="date"]:hover {
+  border-color: #4b5563;
+}
+
+.btn {
   background: #1f2937;
+  border: 1px solid #4b5563;
+  cursor: pointer;
+  font-weight: 500;
 }
 
-.charts-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+.btn:hover {
+  background: #374151;
+}
+
+/* KPIs */
+.kpis {
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
+  padding: 24px;
+}
+
+.kpi-card {
+  background: #020617;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 180px;
+  flex: 1;
+  text-align: center;
+}
+
+.kpi-card h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi-card p {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+/* Gráficos */
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  padding: 24px;
 }
 
 .chart-container {
   background: #020617;
   border: 1px solid #1f2937;
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 20px;
 }
 
 .chart-container h2 {
-  margin: 0 0 8px;
-  font-size: 0.95rem;
-  color: #9ca3af;
+  margin: 0 0 16px;
+  font-size: 1rem;
+  color: #d1d5db;
+  font-weight: 600;
 }
 
+/* Tabela */
 .table-section {
-  padding-bottom: 32px;
+  padding: 24px;
+}
+
+.table-section h2 {
+  margin: 0 0 16px;
+  color: #f9fafb;
 }
 
 #salesTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-#salesTable thead {
-  background: #020617;
-}
-
-#salesTable th,
-#salesTable td {
-  border: 1px solid #1f2937;
-  padding: 6px 8px;
-  text-align: right;
-}
-
-#salesTable th:first-child,
-#salesTable td:first-child,
-#salesTable th:nth-child(2),
-#salesTable td:nth-child(2),
-#salesTable th:nth-child(3),
-#salesTable td:nth-child(3) {
-  text-align: left;
-}
-
-#salesTable tbody tr:nth-child(odd) {
-  background: #020617;
-}
-
-#salesTable tbody tr:nth-child(even) {
-  background: #030712;
-}
-
-@media (max-width: 768px) {
-  section {
-    padding: 12px 12px;
-  }
-}
-/* Tamanho de página e orientação para impressão */
-@page {
-  size: A4 landscape;
-  margin: 10mm;           /* ajuste a margem conforme preferir */
-}
-
-/* Estilos específicos para impressão */
-@media print {
-  /* Remover fundos escuros e coisas que gastam tinta */
-  body {
-    background: #ffffff;
-    color: #000000;
-  }
-
-  /* Opcional: esconder controles de tela */
-  header button,
-  .file-section,
-  #clearFilters {
-    display: none !important;
-  }
-
-  /* Garantir que o conteúdo ocupe bem a largura da folha deitada */
-  html, body {
-    width: 297mm;
-    height: 210mm;
-  }
-
-  .charts-section {
-    grid-template-columns: 1fr 1fr; /* 2 colunas lado a lado no A4 landscape */
-  }
-
-  .chart-container,
-  .kpi-section,
-  .table-section {
-    page-break-inside: avoid; /* evitar quebras no meio de blocos importantes */
-  }
-
-  #salesTable {
-    font-size: 0.7rem; /* reduz um pouco para caber mais colunas */
-  }
-}
-@page {
-  size: A4 landscape;
-  margin: 5mm; /* margem pequena para ganhar largura */
-}
-
-@media print {
-  /* Fundo claro e texto escuro para PDF */
-  body {
-    background: #ffffff;
-    color: #000000;
-  }
-
-  /* Esconder controles de tela */
-  header button,
-  .file-section,
-  #clearFilters {
-    display: none !important;
-  }
-
-  /* Forçar uso da largura da página A4 deitada */
-  html, body {
-    width: 297mm;
-    height: 210mm;
-  }
-
-  /* Um gráfico por linha, ocupando 100% da largura imprimível */
-  .charts-section {
-    display: block;
-  }
-
-  .chart-container {
-    width: 100%;
-    max-width: 100%;
-    margin-bottom: 8mm;
-    page-break-inside: avoid;
-  }
-
-  /* Limitar o tamanho físico dos canvas na impressão */
-  canvas {
-    max-width: 100% !important;
-    max-height: 130mm !important; /* ajuste se quiser mais/menos altura */
-  }
-
-  /* Tabela mais compacta */
-  #salesTable {
-    font-size: 0.7rem;
-  }
-}
-@media print {
-  .controls-wrapper {
-    display: none !important;
-  }
-}
+  width:
