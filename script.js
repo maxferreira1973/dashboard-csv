@@ -1,10 +1,9 @@
-// SCRIPT COMPLETO - Filtros + Gráficos funcionando perfeitamente
-// Gráficos destroem/recuperam a cada filtro - sem erros 404 ou duplicatas
+// SCRIPT DEFINITIVO COMPLETO - Gráficos originais + Insights funcionais
+// Todas funcionalidades + insights acionáveis dinâmicos
 
 (function() {
   'use strict';
 
-  // Elementos DOM
   const els = {
     fileInput: document.getElementById('csvFile'),
     fileNameSpan: document.getElementById('fileName'),
@@ -18,6 +17,8 @@
     clearFiltersBtn: document.getElementById('clearFilters'),
     tableBody: document.querySelector('#salesTable tbody'),
     exportPdfBtn: document.getElementById('exportPdfBtn'),
+    insightsSection: document.getElementById('insights-section'),
+    insightsList: document.getElementById('insights-list'),
     canvases: {
       date: document.getElementById('revenueByDateChart'),
       product: document.getElementById('revenueByProductChart'),
@@ -26,18 +27,16 @@
   };
 
   let rawData = [];
-  let charts = {}; // Armazena instâncias dos gráficos
+  let charts = {};
 
-  // Event listeners seguros
+  // Event listeners
   if (els.fileInput) els.fileInput.addEventListener('change', handleFile);
   if (els.exportPdfBtn) els.exportPdfBtn.addEventListener('click', () => window.print());
   if (els.clearFiltersBtn) els.clearFiltersBtn.addEventListener('click', clearFilters);
-
   ['startDateEl', 'endDateEl', 'productFilterEl', 'regionFilterEl'].forEach(key => {
     if (els[key]) els[key].addEventListener('change', renderAll);
   });
 
-  // Auto-load CSV ao carregar página
   window.addEventListener('load', loadCsv);
 
   function loadCsv() {
@@ -46,13 +45,12 @@
       .then(parseCSV)
       .then(data => {
         rawData = data;
-        if (els.fileNameSpan) els.fileNameSpan.textContent = 'sales_data_example.csv (auto-carregado)';
+        if (els.fileNameSpan) els.fileNameSpan.textContent = 'sales_data_example.csv (auto)';
         populateFilters(data);
         renderAll();
       })
-      .catch(err => {
-        console.warn('CSV não encontrado:', err);
-        if (els.fileNameSpan) els.fileNameSpan.textContent = 'Carregue CSV manualmente';
+      .catch(() => {
+        if (els.fileNameSpan) els.fileNameSpan.textContent = 'Carregue manualmente';
       });
   }
 
@@ -60,33 +58,29 @@
     const file = e.target.files[0];
     if (!file) return;
 
-    if (els.fileNameSpan) els.fileNameSpan.textContent = `Carregado: ${file.name}`;
+    if (els.fileNameSpan) els.fileNameSpan.textContent = file.name;
 
     const reader = new FileReader();
     reader.onload = evt => {
-      try {
-        rawData = parseCSV(evt.target.result);
-        populateFilters(rawData);
-        renderAll();
-      } catch (err) {
-        console.error('Erro ao parsear CSV:', err);
-      }
+      rawData = parseCSV(evt.target.result);
+      populateFilters(rawData);
+      renderAll();
     };
     reader.readAsText(file);
   }
 
   function parseCSV(text) {
     const lines = text.trim().split(/\r?\n/);
-    if (lines.length < 2) throw new Error('CSV inválido');
+    if (lines.length <= 1) return [];
 
-    const header = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const header = lines[0].split(',').map(h => h.trim().toLowerCase());
     const idx = {
       date: header.indexOf('date'),
       product: header.indexOf('product'),
       region: header.indexOf('region'),
-      units: header.findIndex(h => h.includes('units')),
-      revenue: header.findIndex(h => h.includes('revenue')),
-      cost: header.findIndex(h => h.includes('cost'))
+      units: header.indexOf('units_sold'),
+      revenue: header.indexOf('revenue'),
+      cost: header.indexOf('cost')
     };
 
     return lines.slice(1).map(line => {
@@ -94,16 +88,16 @@
       const revenue = parseFloat(cols[idx.revenue] || 0);
       const cost = parseFloat(cols[idx.cost] || 0);
       const profit = revenue - cost;
-      const margin = revenue ? (profit / revenue) : 0;
+      const margin = revenue ? profit / revenue : 0;
 
       return {
-        date: cols[idx.date]?.trim() || '',
-        product: cols[idx.product]?.trim() || 'Desconhecido',
-        region: cols[idx.region]?.trim() || 'Desconhecida',
+        date: cols[idx.date]?.trim(),
+        product: cols[idx.product]?.trim(),
+        region: cols[idx.region]?.trim(),
         units: parseFloat(cols[idx.units] || 0),
         revenue, cost, profit, margin
       };
-    }).filter(d => d.revenue > 0);
+    });
   }
 
   function populateFilters(data) {
@@ -112,186 +106,181 @@
     const products = [...new Set(data.map(d => d.product))].sort();
     const regions = [...new Set(data.map(d => d.region))].sort();
 
-    els.productFilterEl.innerHTML = '<option value="">Todos os produtos</option>' + 
-      products.map(p => `<option value="${p}">${p}</option>`).join('');
-
-    els.regionFilterEl.innerHTML = '<option value="">Todas as regiões</option>' + 
-      regions.map(r => `<option value="${r}">${r}</option>`).join('');
+    els.productFilterEl.innerHTML = '<option value="">Todos</option>' + products.map(p => `<option value="${p}">${p}</option>`).join('');
+    els.regionFilterEl.innerHTML = '<option value="">Todas</option>' + regions.map(r => `<option value="${r}">${r}</option>`).join('');
   }
 
   function clearFilters() {
-    if (els.startDateEl) els.startDateEl.value = '';
-    if (els.endDateEl) els.endDateEl.value = '';
-    if (els.productFilterEl) els.productFilterEl.value = '';
-    if (els.regionFilterEl) els.regionFilterEl.value = '';
+    Object.values(els).forEach(el => {
+      if (el && el.tagName === 'INPUT' && el.type === 'date') el.value = '';
+      if (el && el.tagName === 'SELECT') el.value = '';
+    });
     renderAll();
   }
 
   function getFilteredData() {
     if (!rawData.length) return [];
 
-    const startDate = els.startDateEl?.value ? new Date(els.startDateEl.value) : null;
-    const endDate = els.endDateEl?.value ? new Date(els.endDateEl.value) : null;
-    const selectedProduct = els.productFilterEl?.value || '';
-    const selectedRegion = els.regionFilterEl?.value || '';
+    const start = els.startDateEl?.value ? new Date(els.startDateEl.value) : null;
+    const end = els.endDateEl?.value ? new Date(els.endDateEl.value) : null;
+    const product = els.productFilterEl?.value || '';
+    const region = els.regionFilterEl?.value || '';
 
-    return rawData.filter(row => {
-      const rowDate = new Date(row.date);
-
-      // Filtro data inicial
-      if (startDate && rowDate < startDate) return false;
-
-      // Filtro data final
-      if (endDate && rowDate > endDate) return false;
-
-      // Filtro produto
-      if (selectedProduct && row.product !== selectedProduct) return false;
-
-      // Filtro região
-      if (selectedRegion && row.region !== selectedRegion) return false;
-
+    return rawData.filter(d => {
+      const dDate = new Date(d.date);
+      if (start && dDate < start) return false;
+      if (end && dDate > end) return false;
+      if (product && d.product !== product) return false;
+      if (region && d.region !== region) return false;
       return true;
     });
   }
 
   function renderAll() {
-    const filteredData = getFilteredData();
-    renderKPIs(filteredData);
-    renderTable(filteredData);
-    renderCharts(filteredData);
+    const data = getFilteredData();
+    renderKPIs(data);
+    renderTable(data);
+    renderCharts(data);
+    renderInsights(data);
   }
 
   function renderKPIs(data) {
     if (!els.totalRevenueEl || !els.totalProfitEl || !els.avgMarginEl) return;
 
-    const totalRevenue = data.reduce((sum, row) => sum + row.revenue, 0);
-    const totalProfit = data.reduce((sum, row) => sum + row.profit, 0);
-    const avgMargin = data.length ? data.reduce((sum, row) => sum + row.margin, 0) / data.length : 0;
+    const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
+    const totalProfit = data.reduce((s, d) => s + d.profit, 0);
+    const avgMargin = data.length ? data.reduce((s, d) => s + d.margin, 0) / data.length : 0;
 
-    els.totalRevenueEl.textContent = totalRevenue.toLocaleString('pt-BR', { 
-      style: 'currency', currency: 'BRL' 
-    });
-    els.totalProfitEl.textContent = totalProfit.toLocaleString('pt-BR', { 
-      style: 'currency', currency: 'BRL' 
-    });
+    els.totalRevenueEl.textContent = totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    els.totalProfitEl.textContent = totalProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     els.avgMarginEl.textContent = (avgMargin * 100).toFixed(1) + '%';
   }
 
   function renderTable(data) {
     if (!els.tableBody) return;
 
-    if (!data.length) {
-      els.tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px">Nenhum dado encontrado com os filtros aplicados</td></tr>';
-      return;
-    }
-
-    els.tableBody.innerHTML = data.map(row => `
+    els.tableBody.innerHTML = data.map(d => `
       <tr>
-        <td>${row.date}</td>
-        <td>${row.product}</td>
-        <td>${row.region}</td>
-        <td>${row.units.toLocaleString('pt-BR')}</td>
-        <td>${row.revenue.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-        <td>${row.cost.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-        <td>${row.profit.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-        <td style="color: ${row.margin > 0 ? '#10b981' : '#ef4444'}">${(row.margin * 100).toFixed(1)}%</td>
+        <td>${d.date}</td>
+        <td>${d.product}</td>
+        <td>${d.region}</td>
+        <td>${d.units.toLocaleString('pt-BR')}</td>
+        <td>${d.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${d.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${d.profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${(d.margin * 100).toFixed(1)}%</td>
       </tr>
     `).join('');
   }
 
   function renderCharts(data) {
-    // DESTRÓI TODOS OS GRÁFICOS ANTERIORES
-    Object.values(charts).forEach(chart => {
-      if (chart && typeof chart.destroy === 'function') {
-        chart.destroy();
-      }
-    });
+    // Destroi gráficos antigos
+    Object.values(charts).forEach(c => c?.destroy());
     charts = {};
 
-    if (!data.length) return;
+    if (!data.length || !Chart) return;
 
-    // Dados agregados para gráficos
-    const dataByDate = aggregate(data, 'date');
-    const dataByProduct = aggregate(data, 'product');
-    const dataByRegion = aggregate(data, 'region');
+    const byDate = aggregate(data, 'date');
+    const byProduct = aggregate(data, 'product');
+    const byRegion = aggregate(data, 'region');
 
-    // Gráfico por data (linha)
+    // Gráfico linha por data (ORIGINAL)
     if (els.canvases.date) {
-      const sortedDates = Object.keys(dataByDate).sort();
+      const sortedDates = Object.keys(byDate).sort();
       charts.date = new Chart(els.canvases.date, {
         type: 'line',
-        data: {
-          labels: sortedDates,
-          datasets: [{
-            label: 'Receita',
-            data: sortedDates.map(date => dataByDate[date]),
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            tension: 0.3,
-            fill: true
-          }]
+        data: { 
+          labels: sortedDates, 
+          datasets: [{ 
+            label: 'Receita', 
+            data: sortedDates.map(date => byDate[date]), 
+            borderColor: '#38bdf8', 
+            backgroundColor: 'rgba(56, 189, 248, 0.3)', 
+            tension: 0.2 
+          }] 
         },
-        options: {
-          responsive: true,
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }
+        options: { responsive: true }
       });
     }
 
-    // Gráfico por produto (barra)
+    // Gráfico barras por produto (ORIGINAL)
     if (els.canvases.product) {
       charts.product = new Chart(els.canvases.product, {
         type: 'bar',
-        data: {
-          labels: Object.keys(dataByProduct),
-          datasets: [{
-            label: 'Receita por Produto',
-            data: Object.values(dataByProduct),
-            backgroundColor: 'rgba(34, 197, 94, 0.6)',
-            borderColor: '#22c55e',
-            borderWidth: 1
-          }]
+        data: { 
+          labels: Object.keys(byProduct), 
+          datasets: [{ 
+            label: 'Receita', 
+            data: Object.values(byProduct), 
+            backgroundColor: 'rgba(56, 189, 248, 0.6)' 
+          }] 
         },
-        options: {
-          responsive: true,
-          scales: { y: { beginAtZero: true } }
-        }
+        options: { responsive: true }
       });
     }
 
-    // Gráfico por região (doughnut)
+    // Gráfico barras por região (ORIGINAL)
     if (els.canvases.region) {
       charts.region = new Chart(els.canvases.region, {
-        type: 'doughnut',
-        data: {
-          labels: Object.keys(dataByRegion),
-          datasets: [{
-            data: Object.values(dataByRegion),
-            backgroundColor: [
-              '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'
-            ]
-          }]
+        type: 'bar',
+        data: { 
+          labels: Object.keys(byRegion), 
+          datasets: [{ 
+            label: 'Receita', 
+            data: Object.values(byRegion), 
+            backgroundColor: 'rgba(56, 189, 248, 0.6)' 
+          }] 
         },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: 'bottom' }
-          }
-        }
+        options: { responsive: true }
       });
     }
   }
 
-  function aggregate(data, groupBy) {
-    return data.reduce((acc, row) => {
-      const key = row[groupBy];
-      acc[key] = (acc[key] || 0) + row.revenue;
+  function renderInsights(data) {
+    if (!els.insightsList || !data.length) {
+      if (els.insightsList) els.insightsList.innerHTML = '<p class="text-gray-500 italic">Aplique filtros para ver insights</p>';
+      return;
+    }
+
+    const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
+    const avgMargin = data.reduce((s, d) => s + d.margin, 0) / data.length;
+    const byProduct = aggregate(data, 'product');
+    const byRegion = aggregate(data, 'region');
+    const lowMarginProducts = data.filter(d => d.margin < 0.15).slice(0, 3);
+    const avgUnits = data.reduce((s, d) => s + d.units, 0) / data.length;
+
+    const topProduct = Object.entries(byProduct).sort(([,a], [,b]) => b - a)[0];
+    const topRegion = Object.entries(byRegion).sort(([,a], [,b]) => b - a)[0];
+
+    els.insightsList.innerHTML = `
+      <div class="bg-white p-4 rounded-xl shadow-md border-l-4 border-emerald-500">
+        <h4 class="font-bold text-lg text-emerald-800 mb-2">🏆 TOP Performers</h4>
+        <p><strong>${topProduct[0]}:</strong> R$${topProduct[1].toLocaleString('pt-BR')} (${((topProduct[1]/totalRevenue)*100).toFixed(1)}% receita)</p>
+        <p><strong>${topRegion[0]}:</strong> R$${topRegion[1].toLocaleString('pt-BR')} (${((topRegion[1]/totalRevenue)*100).toFixed(1)}% vendas)</p>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl shadow-md border-l-4 border-orange-500">
+        <h4 class="font-bold text-lg text-orange-800 mb-2">⚠️ Alertas Críticos</h4>
+        ${lowMarginProducts.length ? lowMarginProducts.map(p => `<p>• ${p.product}: ${(p.margin*100).toFixed(1)}% margem</p>`).join('') : '<p>Nenhum produto em risco</p>'}
+        <p>Média unidades/dia: ${avgUnits.toFixed(1)} ${avgUnits < 4 ? '(abaixo meta)' : '(OK)'}</p>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl shadow-md border-l-4 border-blue-500 md:col-span-2">
+        <h4 class="font-bold text-lg text-blue-800 mb-2">🚀 Ações Imediatas</h4>
+        <ul class="list-disc pl-5 space-y-1 text-sm">
+          <li>Foco ${topRegion[0]}: ${((topRegion[1]/totalRevenue)*100).toFixed(0)}% receita</li>
+          <li>${avgMargin < 0.2 ? 'Melhorar' : 'Manter'} margem média ${avgMargin.toFixed(1)}%</li>
+          <li>${lowMarginProducts.length ? `Corrigir ${lowMarginProducts.length} produtos baixa margem` : 'Margens OK'}</li>
+          <li>${data.length < 50 ? 'Expandir amostra dados' : 'Dashboard completo'}</li>
+        </ul>
+      </div>
+    `;
+  }
+
+  function aggregate(data, key) {
+    return data.reduce((acc, d) => {
+      acc[d[key]] = (acc[d[key]] || 0) + d.revenue;
       return acc;
     }, {});
   }
-
-  // Inicialização
-  console.log('Dashboard inicializado - filtros e gráficos prontos!');
 })();
