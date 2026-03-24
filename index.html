@@ -2,41 +2,41 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard de Vendas - CSV</title>
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Chart.js via CDN (precisa vir ANTES do script.js) -->
+  <!-- Chart.js via CDN (antes do script.js) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Seu script -->
-  <script src="script.js"></script>
 </head>
 
 <body>
   <header>
     <h1>Dashboard de Vendas</h1>
-
   </header>
 
-  <!-- NOVA DIV QUE AGRUPA TODOS OS CONTROLES -->
-  <div class="controls-wrapper">
-    <!-- Controles de arquivo e botão de exportar -->
-    <section class="controls">
-      
+  <!-- Controles de arquivo (adicione seu input file aqui se não tiver) -->
+  <section class="file-upload">
+    <input type="file" id="csvFile" accept=".csv" />
+    <button id="loadCsvBtn" class="btn">Carregar CSV</button>
+  </section>
 
-      <!-- Botão de exportar PDF agora fica junto dos controles -->
+  <!-- Controles agrupados -->
+  <div class="controls-wrapper">
+    <!-- Exportar -->
+    <section class="controls">
       <button id="exportPdfBtn" class="btn">Exportar PDF</button>
     </section>
 
-    <!-- Filtros -->
+    <!-- Filtros com date pickers nativos (já funcionam!) -->
     <section class="filters">
       <div class="filter-group">
         <label for="startDate">Data inicial:</label>
-        <input type="date" id="startDate" />
+        <input type="date" id="startDate" value="2024-01-01" min="2024-01-01" max="2024-12-31" />
       </div>
       <div class="filter-group">
         <label for="endDate">Data final:</label>
-        <input type="date" id="endDate" />
+        <input type="date" id="endDate" value="2024-12-31" min="2024-01-01" max="2024-12-31" />
       </div>
       <div class="filter-group">
         <label for="productFilter">Produto:</label>
@@ -53,7 +53,6 @@
       <button id="applyFilters">Aplicar filtros</button>
     </section>
   </div>
-  <!-- FIM DA DIV controls-wrapper -->
 
   <section class="kpis">
     <div class="kpi-card">
@@ -104,8 +103,7 @@
     </table>
   </section>
 
+  <!-- Script único no final -->
   <script src="script.js"></script>
-</div>
-
 </body>
 </html>
