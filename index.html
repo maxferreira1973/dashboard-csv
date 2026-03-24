@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard de Vendas - CSV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Dashboard de Vendas</h1>
+    <p>
+      Carregue um arquivo CSV com as colunas:
+      <code>date</code>, <code>product</code>, <code>region</code>,
+      <code>units_sold</code>, <code>revenue</code>, <code>cost</code>.
+    </p>
+  </header>
+
+  <!-- NOVA DIV QUE AGRUPA TODOS OS CONTROLES -->
+  <div class="controls-wrapper">
+    <!-- Controles de arquivo e botão de exportar -->
+    <section class="controls">
+      <label for="fileInput">Selecionar arquivo CSV:</label>
+      <input type="file" id="fileInput" accept=".csv" />
+
+      <!-- Botão de exportar PDF agora fica junto dos controles -->
+      <button id="exportPdfBtn" class="btn">Exportar PDF</button>
+    </section>
+
+    <!-- Filtros -->
+    <section class="filters">
+      <div class="filter-group">
+        <label for="startDate">Data inicial:</label>
+        <input type="date" id="startDate" />
+      </div>
+      <div class="filter-group">
+        <label for="endDate">Data final:</label>
+        <input type="date" id="endDate" />
+      </div>
+      <div class="filter-group">
+        <label for="filterProduct">Produto:</label>
+        <select id="filterProduct">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterRegion">Região:</label>
+        <select id="filterRegion">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <button id="applyFilters">Aplicar filtros</button>
+    </section>
+  </div>
+  <!-- FIM DA DIV controls-wrapper -->
+
+  <section class="kpis">
+    <div class="kpi-card">
+      <h3>Receita Total</h3>
+      <p id="totalRevenue">-</p>
+    </div>
+    <div class="kpi-card">
+      <h3>Lucro Total</h3>
+      <p id="totalProfit">-</p>
+    </div>
+    <div class="kpi-card">
+      <h3>Margem Média</h3>
+      <p id="avgMargin">-</p>
+    </div>
+  </section>
+
+  <section class="charts">
+    <div class="chart-container">
+      <h2>Receita por mês</h2>
+      <canvas id="revenueByMonth"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Receita por produto</h2>
+      <canvas id="revenueByProduct"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Receita por região</h2>
+      <canvas id="revenueByRegion"></canvas>
+    </div>
+  </section>
+
+  <section class="table-section">
+    <h2>Detalhamento de vendas</h2>
+    <table id="salesTable">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Produto</th>
+          <th>Região</th>
+          <th>Unidades</th>
+          <th>Receita</th>
+          <th>Custo</th>
+          <th>Lucro</th>
+          <th>Margem (%)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
