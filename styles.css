@@ -190,3 +190,42 @@ input[type="date"]:hover {
 
 #salesTable {
   width:
+/* FIX calendário abre em TODO o input date */
+input[type="date"] {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Ícone customizado + força picker em todo o campo */
+input[type="date"]::after {
+  content: "📅";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #9ca3af;
+  font-size: 1rem;
+}
+
+/* Torna o indicador nativo invisível mas clicável em TODO o campo */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  color: transparent;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Suporte Firefox/Edge */
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-clear-button {
+  display: none;
+  -webkit-appearance: none;
+}
+
