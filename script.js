@@ -274,3 +274,4 @@ function createOrUpdateChart(chart, canvas, type, labels, values, label) {
     }
   });
 }
+```
