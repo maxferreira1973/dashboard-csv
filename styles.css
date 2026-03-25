@@ -268,23 +268,3 @@ section {
     display: none !important;
   }
 }
-/* SÓ ÍCONE calendário visível - fundo preto ok */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  background: #4b5563 !important;     /* Cinza visível */
-  opacity: 1 !important;
-  cursor: pointer !important;
-  width: 24px !important;
-  height: 100% !important;
-  right: 4px !important;
-  top: 0 !important;
-  border-radius: 0 3px 3px 0;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  background: #6b7280 !important;     /* Hover mais claro */
-}
-
-/* Padding só pro ícone */
-input[type="date"] {
-  padding-right: 32px !important;
-}
